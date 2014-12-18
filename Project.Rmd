@@ -1,0 +1,87 @@
+---
+title: "Motor Trend - Is an automatic or manual transmission more economic?"
+author: "Fabrizio Maccallini"
+date: "Wednesday, December 17, 2014"
+output: pdf_document
+---
+##Executive Summary
+Motor Trend magazine explored the relationship between fuel efficiency, measured in miles per gallon (`mpg`), and 10 aspects[1] of automobile design and performance for 32 automobiles (1973–74 models)[2]. In particular this analysis focuses on whether automatic or manual transmission affects fuel efficiency, and estimating the difference between the two.  
+The main result is that no type of trasmission is dominant in terms of mpg. Weight is the discrimanat factor, so heavy cars (>3400 lbs) are more economic when having Automatic transmissions, instead non-heavy cars (<3400 lbs) are more efficient with Manual transmission.
+
+##Exploratory data  
+The pairs plot in Figure 1 (Appendix) gives an oveview about the relationship between `mpg` and the other variables. To be noted that two variables, `disp` and `hp`, do not seem to have a linear relationship with `mpg` and may require a transformation.  
+The boxplot in Figure 2 (Appendix) suggests that Manual is more efficient in terms of `mpg` than Automatic transmission.
+
+##Regression Analysis  
+*Model 1*. We perform a simple linear regression where `am` is the predictor and `mpg` is the outcome:
+```{r, echo = FALSE}
+mod1 <- lm(mpg ~ am, mtcars)
+summary(mod1)$coef
+```
+Both coefficients are statistically significant and the expected difference in efficiency between Automatic and Manual is `r round(summary(mod1)$coef[2], 2)` mpg, as the boxplot initially suggested. However this model explains only `r round(summary(mod1)$r.squared * 100, 2)`% of the variance and may be subject to a high bias.  
+
+*Model 2*. In Figure 1 the variable weight, `wt`, seems to offer a good linear fit with `mpg` and we are going to add it to our linear model as the second predictor.
+```{r, echo = FALSE}
+mod2 <- lm(mpg ~ am + wt, mtcars)
+summary(mod2)$coef
+```
+The coefficient of `am` has changed sign to negative and is close to zero. Given the high p-value, we can comfortably fail to reject the null hypotesis, that is to say the difference between Manual and Automatic is likely to be zero in terms of mpg. This second model explains `r round(summary(mod2)$r.squared * 100, 2)`% of the variance.  
+
+*Model 3*. In order to take into account the interaction between transmission and weight, we are going to add a third variable, `am*wt`.
+```{r, echo = FALSE}
+mod3 <- lm(mpg ~ am * wt, mtcars)
+summary(mod3)$coef
+```
+This time the coefficient of `am` is strongly positive and statistically significant. The expected difference in efficiency between Automatic and Manual is `r round(summary(mod3)$coef[2], 2)` mpg, much higher than in *Model 1*. The discrepancy with *Model 2* is explained by the fourth coefficient, `am:wt`, measuring the difference in slope between Manual and Automatic: as the weight increases the fuel consumption increase faster for Manual transmission, in other words heavy cars are more efficient when Automatic. This third model explains `r round(summary(mod3)$r.squared * 100, 2)`% of the variance.  
+
+*Model 4*. We are going to add to *Model 3* all the other variables and run a stepwise algorithm (in both directions) to select the most meaningful set of variables.
+```{r, echo = FALSE}
+mod4a <- lm(mpg ~ . + am * wt, mtcars)
+mod4b <- step(mod4a, direction = "both", trace = 0)
+summary(mod4b)$coef
+```
+Only `qsec` was added. The coefficient of `am` is close to the one in *Model 3* and statistically significant; to be noted the very high standard error of the intercept generating a high p-value. This fourth model explains `r round(summary(mod4b)$r.squared * 100, 2)`% of the variance.  
+
+ANOVA has validated all the steps from *Model 1* to *4* as significant (results in the Appendix[3]).
+
+##Residuals analysis and diagnostics for Model 4 
+In Figure 3 (Appendix) we run some residual analysis. In the *Residuals vs. Fitted* plot, the points seems to be independent.  In the *Q-Q* plot, the points are reasonably close to a normal distribution. In the *Scale-Location* plot, there is no sign of heteroskedasticity. In the *Residuals vs. Leverage*, some points have high leverage but all residuals are low, so the existance of outliers should not distort too much our analysis.
+
+##Inference for Model 4
+The 95% confidence interval for the intercept is very wide, `r round(summary(mod4b)$coef[1, 1] + + c(-1, 1) * qt(.975, df = mod4b$df) * summary(mod4b)$coef[1, 2], 2)` mpg, due to a very high standard error. That causes the p-value to be high and failing to reject the null hypotesis. However this does not undermine our analysis as we are interested in the relative difference in efficiency for the type of transmission.  
+The 95% confidence interval for the `am` coefficient is  `r round(summary(mod4b)$coef[4, 1] + + c(-1, 1) * qt(.975, df = mod4b$df) * summary(mod4b)$coef[4, 2], 2)` mpg, and significantly different from zero. So the difference in efficiency between Manual and Automatic is statistically significant.
+
+##Conclusion
+Given our sample, we can expect Automatic transmission to be more economic for heavy cars and Manual for non-heavy cars. Keeping `qsec` constant at its mean (17.85), a car weighting more than 3.400 lbs[4] is more economic with Automatic transmission, otherwise Manual should be favoured for less than 3.400 lbs.
+
+
+
+##Appendix
+```{r, echo = FALSE, fig.height = 10, fig.width = 10}
+pairs(mtcars, panel = panel.smooth, cex = 0.5, upper.panel = NULL)
+```
+
+Figure 1. Pairs plot of the variables.  
+```{r, echo = FALSE, fig.height = 3, fig.width = 3}
+boxplot(mpg ~ am, mtcars, ylab = 'mpg')
+```
+
+Figure 2. Boxplot: mpg by transmission type (0 Autom., 1 Manual).  
+```{r, echo = FALSE, fig.height = 5, fig.width = 5}
+par(mfrow = c(2, 2))
+plot(mod4b)
+```
+
+Figure 3. Residual Analysis for Model 4.  
+  
+###Notes
+[1] Car models: `r paste(rownames(mtcars), collapse = ", ")`  
+
+[2] Aspects: `mpg` Miles/(US) gallon, `cyl` Number of cylinders, disp     Displacement (cu.in.), `hp` Gross horsepower, `drat` Rear axle ratio, `wt` Weight (lb/1000), `qsec` 1/4 mile time, `vs` V/S, `am` Transmission (0 = automatic, 1 = manual), `gear` Number of forward gears,  `carb` Number of carburetors.  
+
+[3] 
+```{r, echo = FALSE}
+anova(mod1, mod2, mod3, mod4b)
+```
+
+[4] Keeping `qsec` constant we have a system of two equations, `am` = 0 and `am` = 1, giving one solution, `wt` = 3.40
