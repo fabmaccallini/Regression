@@ -5,8 +5,8 @@ date: "Wednesday, December 17, 2014"
 output: pdf_document
 ---
 ##Executive Summary
-Motor Trend magazine explored the relationship between fuel efficiency, measured in miles per gallon (`mpg`), and 10 aspects[1] of automobile design and performance for 32 automobiles (1973–74 models)[2]. In particular this analysis focuses on whether automatic or manual transmission affects fuel efficiency, and estimating the difference between the two.  
-The main result is that no type of trasmission is dominant in terms of mpg. Weight is the discrimanat factor, so heavy cars (>3400 lbs) are more economic when having Automatic transmissions, instead non-heavy cars (<3400 lbs) are more efficient with Manual transmission.
+Motor Trend magazine explored the relationship between fuel efficiency, measured in miles per gallon (`mpg`), and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models). In particular this analysis focuses on whether automatic or manual transmission affects fuel efficiency, and estimating the difference between the two.  
+The main result is that no type of trasmission is dominant in terms of mpg. It is not possible to quantify the difference unless weight is used as a discrimanat factor: heavy cars (>3400 lbs) are more economic when having Automatic transmissions, instead non-heavy cars (<3400 lbs) are more efficient with Manual transmission.
 
 ##Exploratory data  
 The pairs plot in Figure 1 (Appendix) gives an oveview about the relationship between `mpg` and the other variables. To be noted that two variables, `disp` and `hp`, do not seem to have a linear relationship with `mpg` and may require a transformation.  
@@ -18,9 +18,9 @@ The boxplot in Figure 2 (Appendix) suggests that Manual is more efficient in ter
 mod1 <- lm(mpg ~ am, mtcars)
 summary(mod1)$coef
 ```
-Both coefficients are statistically significant and the expected difference in efficiency between Automatic and Manual is `r round(summary(mod1)$coef[2], 2)` mpg, as the boxplot initially suggested. However this model explains only `r round(summary(mod1)$r.squared * 100, 2)`% of the variance and may be subject to a high bias.  
+Both coefficients are statistically significant and the expected difference in efficiency between Automatic and Manual is `r round(summary(mod1)$coef[2], 2)` mpg, as the boxplot initially suggested. However the model explains only `r round(summary(mod1)$r.squared * 100, 2)`% of the variance and may be subject to a high bias.  
 
-*Model 2*. In Figure 1 the variable weight, `wt`, seems to offer a good linear fit with `mpg` and we are going to add it to our linear model as the second predictor.
+*Model 2*. In Figure 1 the variable weight, `wt`, seems to offer a good linear fit with `mpg` so we are going to add it to our linear model as the second predictor.
 ```{r, echo = FALSE}
 mod2 <- lm(mpg ~ am + wt, mtcars)
 summary(mod2)$coef
@@ -40,19 +40,19 @@ mod4a <- lm(mpg ~ . + am * wt, mtcars)
 mod4b <- step(mod4a, direction = "both", trace = 0)
 summary(mod4b)$coef
 ```
-Only `qsec` was added. The coefficient of `am` is close to the one in *Model 3* and statistically significant; to be noted the very high standard error of the intercept generating a high p-value. This fourth model explains `r round(summary(mod4b)$r.squared * 100, 2)`% of the variance.  
+Only `qsec` was added. The coefficient of `am` is close to the one in *Model 3* and statistically significant; to be noted the very high standard error of the `Intercept` generating a high p-value. This fourth model explains `r round(summary(mod4b)$r.squared * 100, 2)`% of the variance.  
 
-ANOVA has validated all the steps from *Model 1* to *4* as significant (results in the Appendix[3]).
+ANOVA has validated all the steps from *Model 1* to *4* as significant (results are not included to keep the analysis within two pages).
 
 ##Residuals analysis and diagnostics for Model 4 
 In Figure 3 (Appendix) we run some residual analysis. In the *Residuals vs. Fitted* plot, the points seems to be independent.  In the *Q-Q* plot, the points are reasonably close to a normal distribution. In the *Scale-Location* plot, there is no sign of heteroskedasticity. In the *Residuals vs. Leverage*, some points have high leverage but all residuals are low, so the existance of outliers should not distort too much our analysis.
 
 ##Inference for Model 4
-The 95% confidence interval for the intercept is very wide, `r round(summary(mod4b)$coef[1, 1] + + c(-1, 1) * qt(.975, df = mod4b$df) * summary(mod4b)$coef[1, 2], 2)` mpg, due to a very high standard error. That causes the p-value to be high and failing to reject the null hypotesis. However this does not undermine our analysis as we are interested in the relative difference in efficiency for the type of transmission.  
+The 95% confidence interval for the intercept is very wide, `r round(summary(mod4b)$coef[1, 1] + + c(-1, 1) * qt(.975, df = mod4b$df) * summary(mod4b)$coef[1, 2], 2)` mpg, due to a very high standard error. That causes the p-value to be high and failing to reject the null hypotesis. But this does not undermine our analysis as we are interested in the relative difference in efficiency for the type of transmission.  
 The 95% confidence interval for the `am` coefficient is  `r round(summary(mod4b)$coef[4, 1] + + c(-1, 1) * qt(.975, df = mod4b$df) * summary(mod4b)$coef[4, 2], 2)` mpg, and significantly different from zero. So the difference in efficiency between Manual and Automatic is statistically significant.
 
 ##Conclusion
-Given our sample, we can expect Automatic transmission to be more economic for heavy cars and Manual for non-heavy cars. Keeping `qsec` constant at its mean (17.85), a car weighting more than 3.400 lbs[4] is more economic with Automatic transmission, otherwise Manual should be favoured for less than 3.400 lbs.
+Given our sample, it is not possible to answer the question in our title nor to quantify the difference in mpg, unless we take the weight into account. Keeping `qsec` constant at its mean (17.85), we have a system of two equations, `am` = 0 and `am` = 1, giving one solution, `wt` = 3.40 or the weight where the efficiency is equal. A car weighting more than 3.400 lbs is expected more economic with Automatic transmission, with a difference of `r round(summary(mod4b)$coef[4, 1], 2)` mpg for every 1.000 lbs exceeding the neutral threshold. Manual should be favoured instead if the weight is less than 3.400 lbs, with a difference of `r round(summary(mod4b)$coef[4, 1], 2)` mpg for every 1.000 lbs below the threshold.
 
 
 
@@ -72,16 +72,4 @@ par(mfrow = c(2, 2))
 plot(mod4b)
 ```
 
-Figure 3. Residual Analysis for Model 4.  
-  
-###Notes
-[1] Car models: `r paste(rownames(mtcars), collapse = ", ")`  
-
-[2] Aspects: `mpg` Miles/(US) gallon, `cyl` Number of cylinders, disp     Displacement (cu.in.), `hp` Gross horsepower, `drat` Rear axle ratio, `wt` Weight (lb/1000), `qsec` 1/4 mile time, `vs` V/S, `am` Transmission (0 = automatic, 1 = manual), `gear` Number of forward gears,  `carb` Number of carburetors.  
-
-[3] 
-```{r, echo = FALSE}
-anova(mod1, mod2, mod3, mod4b)
-```
-
-[4] Keeping `qsec` constant we have a system of two equations, `am` = 0 and `am` = 1, giving one solution, `wt` = 3.40
+Figure 3. Residual Analysis for Model 4.
